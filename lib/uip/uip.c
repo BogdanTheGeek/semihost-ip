@@ -66,6 +66,7 @@ header fields and finally send the packet back to the peer.
 #include "uip.h"
 #include "uipopt.h"
 #include "uip_arch.h"
+#include <string.h>
 
 /*-----------------------------------------------------------------------------------*/
 /* Variable definitions. */

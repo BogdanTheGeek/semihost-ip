@@ -69,6 +69,22 @@ int getchar(void)
     return SEMIHOST_SysCall(SYS_READC, NULL);
 }
 
+/**
+ * @brief  Read data from a file descriptor using semihosting.
+ * @param  fd - file descriptor (SEMIHOST_STDIN)
+ * @param  buf - pointer to the buffer to store read data
+ * @param  count - number of bytes to read
+ * @return The number of bytes read, or 0 if no data is available.
+ */
+static inline int read(int fd, void *buf, int count)
+{
+    int32_t args[3] = {fd, (int32_t)buf, count};
+    int ret = SEMIHOST_SysCall(SYS_READ, &args[0]);
+    if (ret < 0) return 0;      // nothing
+    if (ret == 0) return count; // all bytes read
+    return count - ret;         // return number of bytes read
+}
+
 void uip_log(char *msg)
 {
     UNUSED(msg);
@@ -79,21 +95,35 @@ int main(void)
 {
 
 #if 0 // enable for testing semihosting i/o
+    char c;
     while (1)
     {
         slipdev_char_put('.');
-        int c = getchar();
-        if (c != -1)
+        if (slipdev_char_poll((uint8_t *)&c))
         {
             printf("You pressed: %c\n", c);
         }
-        DLY_ms(1000);
+        DLY_ms(500);
     }
+#elif 0 // test buffered read
+    char rx_buffer[10];
+    while (1)
+    {
+        int ret = read(SEMIHOST_STDIN, rx_buffer, sizeof(rx_buffer));
+        if (ret != 0)
+        {
+            printf("Read %d bytes: \r\n", ret);
+        }
+        DLY_ms(100);
+    }
+
 #endif
 
     slipdev_init();
     uip_init();
     httpd_init();
+
+    uint32_t lastMillis = millis();
 
     for (;;)
     {
@@ -107,13 +137,17 @@ int main(void)
             }
         }
 
-        // This could run periodically
-        for (uint8_t i = 0; i < UIP_CONNS; i++)
+        const uint32_t now = millis();
+        if (now - lastMillis >= 1000)
         {
-            uip_periodic(i);
-            if (uip_len > 0)
+            lastMillis = now;
+            for (uint8_t i = 0; i < UIP_CONNS; i++)
             {
-                slipdev_send();
+                uip_periodic(i);
+                if (uip_len > 0)
+                {
+                    slipdev_send();
+                }
             }
         }
     }
@@ -132,7 +166,6 @@ void SysTick_Handler(void)
 extern int _write(int file, char *ptr, int len);
 void slipdev_char_put(uint8_t c)
 {
-    extern int _write(int file, char *ptr, int len);
     (void)_write(SEMIHOST_STDOUT, (char *)&c, 1);
 }
 
@@ -141,6 +174,7 @@ void slipdev_write(uint8_t *buf, uint16_t len)
     (void)_write(SEMIHOST_STDOUT, (char *)buf, len);
 }
 
+#if 0 // read 1 char at a time
 uint8_t slipdev_char_poll(uint8_t *c)
 {
     int data = getchar();
@@ -154,6 +188,40 @@ uint8_t slipdev_char_poll(uint8_t *c)
         return 0;
     }
 }
+#else // buffered read
+ 
+// This can be as big as the SLIP_BUFFER_SIZE for 
+// the lowest latency or smaller for lower memory usage
+#define RX_BUFFER_SIZE 32
+uint8_t slipdev_char_poll(uint8_t *c)
+{
+    static uint8_t rx_buffer[RX_BUFFER_SIZE];
+    static int stored = 0;
+    static int sent = 0;
+
+    // Fill the buffer if empty
+    if (stored == 0)
+    {
+        stored = read(SEMIHOST_STDIN, rx_buffer, RX_BUFFER_SIZE);
+    }
+
+    // Return a character if available
+    if (stored != sent)
+    {
+        *c = rx_buffer[sent++];
+        if (sent == stored)
+        {
+            sent = 0;
+            stored = 0;
+        }
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+#endif
 
 //------------------------------------------------------------------------------
 // Module static functions

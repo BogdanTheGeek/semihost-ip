@@ -329,7 +329,7 @@ typedef uint16_t uip_stats_t;
  *
  * \hideinitializer
  */
-#define UIP_RECEIVE_WINDOW   UIP_BUFSIZE
+#define UIP_RECEIVE_WINDOW   UIP_BUFSIZE>>1
 
 /**
  * Determines if support for TCP urgent data notification should be
@@ -423,9 +423,11 @@ typedef uint16_t uip_stats_t;
  * not need to be larger than 1500 bytes. Lower size results in lower
  * TCP throughput, larger size results in higher TCP throughput.
  *
+ * Needs to be as large as the maximum expected IP packet(http request)
+ *
  * \hideinitializer
  */
-#define UIP_BUFSIZE     1024
+#define UIP_BUFSIZE     256
 
 
 /**

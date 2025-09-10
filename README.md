@@ -29,11 +29,15 @@ For the TCP/IP stack, I used uIP v9.0 as it is pretty popular and easy to port a
 
 And that's it! You can now ping `192.168.190.2` or curl `http://192.168.190.2:80` to see the web server running on the microcontroller.
 
-The resource usage is pretty low, the RAM was pushed as far as I could, it can be reduced way more:
+Performance can be pretty good at the expense of RAM usage.
+I got pings to be as low as 30ms, and loading a simple web page took about 150ms.
+
+The default settings however conserve a bit more RAM, and the ping times are around 70ms, and loading a web page takes about 400ms:
+
 ```
 Memory region         Used Size  Region Size  %age Used
-           FLASH:        8528 B        24 KB     34.70%
-             RAM:        2672 B         3 KB     86.98%
+           FLASH:        8632 B        24 KB     35.12%
+             RAM:        1496 B         3 KB     48.70%
 ```
 
 

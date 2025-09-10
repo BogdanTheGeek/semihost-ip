@@ -75,8 +75,6 @@
 #define SLIP_ESC_END 0334
 #define SLIP_ESC_ESC 0335
 
-static u8_t slip_buf[UIP_BUFSIZE];
-
 static u16_t len=0;
 static u16_t tmplen = 0;
 static u8_t lastc = 0;
@@ -125,18 +123,18 @@ slipdev_send(void)
   slipdev_char_put(SLIP_END);
 }
 #else
-#define SLIP_BUFFER_SIZE 128
+#define SLIP_BUFFER_SIZE UIP_BUFSIZE + 64
 void
 slipdev_send(void)
 {
   u16_t i;
   u8_t *ptr;
   u8_t c;
-  u8_t slip_buffer[SLIP_BUFFER_SIZE];
+  static u8_t slip_tx_buf[SLIP_BUFFER_SIZE];
   u16_t buf_pos = 0;
   
   // Add starting SLIP_END
-  slip_buffer[buf_pos++] = SLIP_END;
+  slip_tx_buf[buf_pos++] = SLIP_END;
 
   ptr = uip_buf;
   for(i = 0; i < uip_len; ++i) {
@@ -147,34 +145,34 @@ slipdev_send(void)
     
     // Check if we need space for worst case (2 bytes for escaped char)
     if (buf_pos >= SLIP_BUFFER_SIZE - 2) {
-      slipdev_write(slip_buffer, buf_pos);
+      slipdev_write(slip_tx_buf, buf_pos);
       buf_pos = 0;
     }
     
     switch(c) {
     case SLIP_END:
-      slip_buffer[buf_pos++] = SLIP_ESC;
-      slip_buffer[buf_pos++] = SLIP_ESC_END;
+      slip_tx_buf[buf_pos++] = SLIP_ESC;
+      slip_tx_buf[buf_pos++] = SLIP_ESC_END;
       break;
     case SLIP_ESC:
-      slip_buffer[buf_pos++] = SLIP_ESC;
-      slip_buffer[buf_pos++] = SLIP_ESC_ESC;
+      slip_tx_buf[buf_pos++] = SLIP_ESC;
+      slip_tx_buf[buf_pos++] = SLIP_ESC_ESC;
       break;
     default:
-      slip_buffer[buf_pos++] = c;
+      slip_tx_buf[buf_pos++] = c;
       break;
     }
   }
   
   // Add ending SLIP_END
   if (buf_pos >= SLIP_BUFFER_SIZE) {
-    slipdev_write(slip_buffer, buf_pos);
+    slipdev_write(slip_tx_buf, buf_pos);
     buf_pos = 0;
   }
-  slip_buffer[buf_pos++] = SLIP_END;
+  slip_tx_buf[buf_pos++] = SLIP_END;
   
   // Send remaining bytes
-  slipdev_write(slip_buffer, buf_pos);
+  slipdev_write(slip_tx_buf, buf_pos);
 }
 #endif
 /*-----------------------------------------------------------------------------------*/
@@ -195,48 +193,48 @@ u16_t
 slipdev_poll(void)
 {
   u8_t c;
+  static u8_t slip_buf[UIP_BUFSIZE];
   
   while(slipdev_char_poll(&c)) {
-    switch(c) {
-    case SLIP_ESC:
-      lastc = c;
-      break;
-      
-    case SLIP_END:
-      lastc = c;
-      /* End marker found, we copy our input buffer to the uip_buf
-	 buffer and return the size of the packet we copied. */
-      memcpy(uip_buf, slip_buf, len);
-      tmplen = len;
-      len = 0;
-      return tmplen;
-      
-    default:     
-      if(lastc == SLIP_ESC) {
-	lastc = c;
-	/* Previous read byte was an escape byte, so this byte will be
-	   interpreted differently from others. */
-	switch(c) {
-	case SLIP_ESC_END:
-	  c = SLIP_END;
-	  break;
-	case SLIP_ESC_ESC:
-	  c = SLIP_ESC;
-	  break;
-	}
-      } else {
-	lastc = c;
-      }
-      
-      slip_buf[len] = c;
-      ++len;
-      
-      if(len > UIP_BUFSIZE) {
-	len = 0;
-      }
-    
-      break;
-    }
+     switch(c) {
+        case SLIP_ESC:
+           lastc = c;
+           break;
+
+        case SLIP_END:
+           lastc = c;
+           /* End marker found, we copy our input buffer to the uip_buf
+              buffer and return the size of the packet we copied. */
+           memcpy(uip_buf, slip_buf, len);
+           tmplen = len;
+           len = 0;
+           return tmplen;
+
+        default:     
+           if(lastc == SLIP_ESC) {
+              lastc = c;
+              /* Previous read byte was an escape byte, so this byte will be
+                 interpreted differently from others. */
+              switch(c) {
+                 case SLIP_ESC_END:
+                    c = SLIP_END;
+                    break;
+                 case SLIP_ESC_ESC:
+                    c = SLIP_ESC;
+                    break;
+              }
+           } else {
+              lastc = c;
+           }
+
+           slip_buf[len] = c;
+           ++len;
+
+           if(len > UIP_BUFSIZE) {
+              len = 0;
+           }
+           break;
+     }
   }
   return 0;
 }

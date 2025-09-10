@@ -25,10 +25,11 @@ FSPATH := $(LIB)/uip
 FSFILES := $(shell find $(FSPATH)/fs/ -type f)
 
 LIBFILES := $(wildcard $(LIB)/*.c) $(filter-out $(FSPATH)/fsdata.c, $(wildcard $(LIB)/uip/*.c))
+LIBHEADERS := $(wildcard $(LIB)/*.h) $(wildcard $(LIB)/uip/*.h)
 
 PORT := 4290
 TTY  := ./tty
-PYOCDFLAGS := -t py32f030x4 -f 1m --elf $(BIN)/$(TARGET).elf
+PYOCDFLAGS := -t py32f030x4 -f 24m --elf $(BIN)/$(TARGET).elf
 
 
 # Compiler Flags
@@ -37,14 +38,14 @@ CFLAGS  += -fdata-sections -ffunction-sections -fno-builtin -fno-common -Wall -D
 LDFLAGS := -T$(LDSCRIPT) #-static -lc -lm -nostartfiles -nostdlib -lgcc
 LDFLAGS += -Wl,--gc-sections,--build-id=none --specs=nano.specs --specs=nosys.specs -Wl,--print-memory-usage
 CFILES  := $(wildcard ./*.c) $(wildcard $(SOURCE)/*.c) $(wildcard $(SOURCE)/*.S) $(LIBFILES)
-HFILES  := $(wildcard ./*.h) $(wildcard $(SOURCE)/*.h)
+HFILES  := $(wildcard ./*.h) $(wildcard $(SOURCE)/*.h) $(LIBHEADERS)
 
 all:	$(BIN)/$(TARGET).lst $(BIN)/$(TARGET).map $(BIN)/$(TARGET).bin $(BIN)/$(TARGET).hex $(BIN)/$(TARGET).asm
 
 $(BIN):
 	@mkdir -p $(BIN)
 
-$(BIN)/$(TARGET).elf: $(HFILES) Makefile $(LDSCRIPT) $(FSPATH)/fsdata.c
+$(BIN)/$(TARGET).elf: $(CFILES) $(HFILES) Makefile $(LDSCRIPT) $(FSPATH)/fsdata.c
 	@echo "Building $(BIN)/$(TARGET).elf ..."
 	@mkdir -p $(BIN)
 	@$(CC) -o $@ $(CFILES) $(CFLAGS) $(LDFLAGS)
@@ -96,11 +97,11 @@ connect:
 
 monitor:
 	@$(PREFIX)-gdb $(BIN)/$(TARGET).elf -ex="c" &
-	@pyocd gdb -S -O semihost_console_type=console $(PYOCDFLAGS)
+	@pyocd gdb --persist -S -O semihost_console_type=console $(PYOCDFLAGS)
 
 serve:
 	@$(PREFIX)-gdb $(BIN)/$(TARGET).elf -ex="c" &
-	@pyocd gdb  --persist -S -O semihost_console_type=telnet -T $(PORT) $(PYOCDFLAGS)
+	@pyocd gdb --persist -S -O semihost_console_type=telnet -T $(PORT) $(PYOCDFLAGS)
 
 serve-rtt:
 	pyocd gdb rtt -O semihost_console_type=telnet -t py32f002bx5 -f 24m
