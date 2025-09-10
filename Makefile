@@ -27,9 +27,15 @@ FSFILES := $(shell find $(FSPATH)/fs/ -type f)
 LIBFILES := $(wildcard $(LIB)/*.c) $(filter-out $(FSPATH)/fsdata.c, $(wildcard $(LIB)/uip/*.c))
 LIBHEADERS := $(wildcard $(LIB)/*.h) $(wildcard $(LIB)/uip/*.h)
 
+ifeq ($(shell uname -s),Darwin)
+    IS_MACOS = 1
+else
+    IS_MACOS = 0
+endif
+
+TTY  := $(PWD)/slipVirtTTY
 PORT := 4290
-TTY  := ./tty
-PYOCDFLAGS := -t py32f030x4 -f 24m --elf $(BIN)/$(TARGET).elf
+PYOCDFLAGS := -t $(MODEL) -f 24m --elf $(BIN)/$(TARGET).elf
 
 
 # Compiler Flags
@@ -101,16 +107,22 @@ monitor:
 
 serve:
 	@$(PREFIX)-gdb $(BIN)/$(TARGET).elf -ex="c" &
-	@pyocd gdb --persist -S -O semihost_console_type=telnet -T $(PORT) $(PYOCDFLAGS)
+	@pyocd gdb -S -O semihost_console_type=telnet -T $(PORT) $(PYOCDFLAGS)
 
 serve-rtt:
 	pyocd gdb rtt -O semihost_console_type=telnet -t py32f002bx5 -f 24m
 
 tty:
-	socat PTY,link=$(TTY),raw,echo=0,wait-slave TCP:localhost:$(PORT),nodelay
+	socat -d -d -d PTY,link=$(TTY),raw,echo=0 TCP:localhost:$(PORT),nodelay
 
 slip:
+ifeq ($(IS_MACOS),1)
 	sudo ./tools/slip-macos/slip -b 115200 -l 192.168.190.1 -r 192.168.190.2 $(TTY)
+else
+	sudo slattach -L -p slip -s 115200 $(TTY) & \
+	sudo ip addr add 192.168.190.1 peer 192.168.190.2/24 dev sl0 && \
+   sudo ip link set mtu 1500 up dev sl0
+endif
 
 debug:
 	@$(PREFIX)-gdb $(BIN)/$(TARGET).elf -ex="monitor reset halt"
