@@ -1,3 +1,9 @@
+> [!WARNING]
+> At the time of writing, there is a bug in pyocd that doesn't handle reading stdin properly.
+> You can use the patch in the issue below:
+> https://github.com/pyocd/pyOCD/issues/1810
+
+
 # Running a web server over SWD
 After playing around with semihosting on a little py32 microcontroller I found in a disposable vape, I realised that pyocd can forward the semihosting stdout/stdin to a TCP port.
 
