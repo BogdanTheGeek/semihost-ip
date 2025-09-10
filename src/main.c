@@ -107,7 +107,7 @@ int main(void)
             }
         }
 
-        // This could run periodcally
+        // This could run periodically
         for (uint8_t i = 0; i < UIP_CONNS; i++)
         {
             uip_periodic(i);

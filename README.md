@@ -15,7 +15,7 @@ The simples protocol I have come across is SLIP (Serial Line Internet Protocol).
 
 I wrote this project on a mac, so I used a different method to create a SLIP interface than you would on Linux, but they essentially do the same thing.
 
-> [WARNING!]
+> [!WARNING]
 > I didn't test this on Linux.
 
 Here is the Linux command:
@@ -24,6 +24,8 @@ sudo slattach -p slip -s 115200 ./tty &
 sudo ip link set sl0 up
 sudo ip addr add 192.168.190.1 peer 192.168.190.2 dev sl0
 ```
+
+For the TCP/IP stack, I used uIP v9.0 as it is pretty popular and easy to port as well as being very small and having good examples. I used the picosoc-uip project as a reference for how to set up a minimal web server. My only change was to optimise the SLIP serialisation just a little bit to reduce the semihosting overhead.
 
 And that's it! You can now ping `192.168.190.2` or curl `http://192.168.190.2:80` to see the web server running on the microcontroller.
 
