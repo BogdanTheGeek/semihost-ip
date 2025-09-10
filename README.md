@@ -31,5 +31,6 @@ And that's it! You can now ping `192.168.190.2` or curl `http://192.168.190.2:80
 # Aknowledgements
  - [pyOCD](https://github.com/pyocd/pyOCD)
  - [uIP](https://github.com/adamdunkels/uip/tree/uip-0-9)
+ - [picosoc-uip](https://github.com/grahamedgecombe/picosoc-uip)
  - [slip-macos](https://github.com/jackqu7/slip-macos)
  - [wagiminator's MCU Templates](https://github.com/wagiminator/MCU-Templates)
