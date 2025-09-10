@@ -40,6 +40,9 @@ Memory region         Used Size  Region Size  %age Used
              RAM:        1496 B         3 KB     48.70%
 ```
 
+Throughput is pretty acceptable for a microcontroller over SWD.
+I got it as high as 10KiB/s with larger web pages.
+
 
 # Aknowledgements
  - [pyOCD](https://github.com/pyocd/pyOCD)

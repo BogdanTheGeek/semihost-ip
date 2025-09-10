@@ -115,6 +115,9 @@ slip:
 debug:
 	@$(PREFIX)-gdb $(BIN)/$(TARGET).elf -ex="monitor reset halt"
 
+speedtest:
+	curl -w "avg_speed: %{speed_download} bytes/s\n" -o /dev/null -s http://192.168.190.2/
+
 clean:
 	@echo "Cleaning all up ..."
 	rm -rf $(BIN)
