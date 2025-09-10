@@ -49,8 +49,21 @@ Memory region         Used Size  Region Size  %age Used
 Throughput is pretty acceptable for a microcontroller over SWD.
 I got it as high as 10KiB/s with larger web pages.
 
+# Requirements
+ - Any arm microcontroller supported by pyocd (I used a py32f002b)
+ - socat
+ - pyocd
+ - perl (for the makefsimage script)
 
-# Aknowledgements
+# Usage
+In separate terminals, run the following commands:
+```sh
+make flash serve
+make tty
+make slip # or the linux equivalent
+```
+
+# Acknowledgements
  - [pyOCD](https://github.com/pyocd/pyOCD)
  - [uIP](https://github.com/adamdunkels/uip/tree/uip-0-9)
  - [picosoc-uip](https://github.com/grahamedgecombe/picosoc-uip)
