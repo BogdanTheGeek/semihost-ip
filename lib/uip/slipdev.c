@@ -92,7 +92,7 @@ static u8_t lastc = 0;
  *
  */
 /*-----------------------------------------------------------------------------------*/
-#if 0
+#if 0 // this send 1 char at a time
 void
 slipdev_send(void)
 {

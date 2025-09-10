@@ -28,6 +28,8 @@ LIBFILES := $(wildcard $(LIB)/*.c) $(filter-out $(FSPATH)/fsdata.c, $(wildcard $
 
 PORT := 4290
 TTY  := ./tty
+PYOCDFLAGS := -t py32f030x4 -f 1m --elf $(BIN)/$(TARGET).elf
+
 
 # Compiler Flags
 CFLAGS  := -g -Os -flto $(CPUARCH) -DF_CPU=$(F_CPU) -I$(SOURCE) -I. -I$(LIB) -I$(LIB)/uip
@@ -90,16 +92,15 @@ flash:	$(BIN)/$(TARGET).bin
 	@pyocd load -t $(MODEL) -f 1m $(BIN)/$(TARGET).bin
 
 connect:
-	@pyocd gdb -S -O semihost_console_type=console -t py32f030x4 -f 1m --elf $(BIN)/$(TARGET).elf
-
+	@pyocd gdb --persist -S -O semihost_console_type=console $(PYOCDFLAGS)
 
 monitor:
 	@$(PREFIX)-gdb $(BIN)/$(TARGET).elf -ex="c" &
-	@pyocd gdb -S -O semihost_console_type=console -t py32f030x4 -f 1m --elf $(BIN)/$(TARGET).elf
+	@pyocd gdb -S -O semihost_console_type=console $(PYOCDFLAGS)
 
 serve:
 	@$(PREFIX)-gdb $(BIN)/$(TARGET).elf -ex="c" &
-	@pyocd gdb -S -O semihost_console_type=telnet -T $(PORT) -t py32f002bx5 -f 24m --elf $(BIN)/$(TARGET).elf
+	@pyocd gdb  --persist -S -O semihost_console_type=telnet -T $(PORT) $(PYOCDFLAGS)
 
 serve-rtt:
 	pyocd gdb rtt -O semihost_console_type=telnet -t py32f002bx5 -f 24m
