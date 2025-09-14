@@ -1,8 +1,8 @@
-> [!WARNING]
-> At the time of writing, there is a bug in pyocd that doesn't handle reading stdin properly.
-> You can use the patch in the issue below:
-> https://github.com/pyocd/pyOCD/issues/1810
+You can find my blog post about this project here: https://bogdanthegeek.github.io/blog/projects/vapeserver/
 
+The vape is hosted here: http://ewaste.fka.wtf/
+
+And if it's down: https://web.archive.org/web/20250914222638/http://ewaste.fka.wtf/
 
 # Running a web server over SWD
 After playing around with semihosting on a little py32 microcontroller I found in a disposable vape, I realised that pyocd can forward the semihosting stdout/stdin to a TCP port.
@@ -43,7 +43,7 @@ I got it as high as 10KiB/s with larger web pages.
 # Requirements
  - Any arm microcontroller supported by pyocd (I used a py32f002b)
  - socat
- - pyocd
+ - pyocd >= 0.39.0
  - perl (for the makefsimage script)
  - net-tools (for slattach on linux)
 
