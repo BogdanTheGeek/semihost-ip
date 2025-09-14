@@ -108,8 +108,17 @@ i /footer.plain
 
 struct httpd_state *hs;
 
-extern const struct fsdata_file file_index_html;
+extern const struct fsdata_file file_index_html_gz;
 extern const struct fsdata_file file_404_html;
+
+__attribute__((weak))
+int uip_api_handler(const char *endpoint, char **data, int *len)
+{
+   (void)endpoint;
+   (void)data;
+   (void)len;
+   return 0;
+}
 
 /*-----------------------------------------------------------------------------------*/
 /**
@@ -191,6 +200,7 @@ httpd_appcall(void)
          }
       }
 
+
       PRINT("request for file ");
       PRINTLN(&uip_appdata[4]);
       
@@ -198,7 +208,19 @@ httpd_appcall(void)
       if(uip_appdata[4] == '/' &&
          uip_appdata[5] == 0)
       {
-         fs_open(file_index_html.name, &fsfile);    
+         hs->hits++;
+         fs_open(file_index_html_gz.name, &fsfile);    
+      } else if(uip_appdata[4] == '/' &&
+                uip_appdata[5] == 'a' &&
+                uip_appdata[6] == 'p' &&
+                uip_appdata[7] == 'i' &&
+                uip_appdata[8] == '/' )
+      {
+         if(!uip_api_handler((char *)&uip_appdata[9], &fsfile.data, &fsfile.len))
+         {
+            PRINTLN("API handler failed");
+            fs_open(file_404_html.name, &fsfile);
+         }
       } else {
          if(!fs_open((const char *)&uip_appdata[4], &fsfile)) {
             PRINTLN("couldn't open file");

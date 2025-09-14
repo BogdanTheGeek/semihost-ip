@@ -329,7 +329,7 @@ typedef uint16_t uip_stats_t;
  *
  * \hideinitializer
  */
-#define UIP_RECEIVE_WINDOW   UIP_BUFSIZE>>1
+#define UIP_RECEIVE_WINDOW   UIP_BUFSIZE/2
 
 /**
  * Determines if support for TCP urgent data notification should be
@@ -427,7 +427,7 @@ typedef uint16_t uip_stats_t;
  *
  * \hideinitializer
  */
-#define UIP_BUFSIZE     256
+#define UIP_BUFSIZE     (256+128)
 
 
 /**

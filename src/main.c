@@ -16,6 +16,8 @@
 #include "semihost.h"
 #include "system.h"
 
+#include <string.h>
+
 #include "slipdev.h"
 #include "uip.h"
 
@@ -33,6 +35,10 @@
 #define UNUSED(x) (void)(x)
 #endif /* UNUSED */
 
+#define UNIQUE_ID_ADDRESS 0x1FFF0000
+
+#define API_HEADER "HTTP/1.0 200 OK\r\nServer: uIP/0.9\r\nContent-type: application/json\r\n\r\n"
+
 //------------------------------------------------------------------------------
 // External variables
 //------------------------------------------------------------------------------
@@ -44,11 +50,20 @@
 //------------------------------------------------------------------------------
 // Module type definitions
 //------------------------------------------------------------------------------
+typedef struct
+{
+    const char lotA[4];
+    const u8_t wafer;
+    const char lotB[3];
+} unique_id_t;
+static const unique_id_t *const s_uniqueId = (unique_id_t *)UNIQUE_ID_ADDRESS;
+static char s_uidString[16] = {0};
 
 //------------------------------------------------------------------------------
 // Module static variables
 //------------------------------------------------------------------------------
-static uint32_t s_systick = 0;
+// NOTE: this won't update while in a debugger halt
+static volatile uint32_t s_systick = 0;
 
 //------------------------------------------------------------------------------
 // Module static function prototypes
@@ -93,8 +108,10 @@ void uip_log(char *msg)
 
 int main(void)
 {
+    (void)snprintf(s_uidString, sizeof(s_uidString), "%.4s%.3s-%03u",
+                   s_uniqueId->lotA, s_uniqueId->lotB, s_uniqueId->wafer);
 
-#if 0 // enable for testing semihosting i/o
+#if 0   // enable for testing semihosting i/o
     char c;
     while (1)
     {
@@ -154,6 +171,33 @@ int main(void)
 }
 
 /**
+ * @brief  Handle API requests.
+ * @param[in] endpoint - API endpoint string and url parameters
+ * @param[out] data - pointer to data buffer to be filled with response data
+ * @param[out] len - pointer to length of response data
+ * @return 0 if failed, non-zero if successful.
+ */
+int uip_api_handler(const char *endpoint, char **data, int *len)
+{
+    // tcpchecksum calculation uses 16-bit accesses
+    __attribute__((aligned(2))) static char responseBuffer[256] = API_HEADER;
+
+    static char *const payloadStart = responseBuffer + sizeof(API_HEADER) - 1;
+    static const size_t payloadCapacity = sizeof(responseBuffer) - sizeof(API_HEADER);
+
+    if (strcmp(endpoint, "status") == 0)
+    {
+        const int ret = snprintf(payloadStart, payloadCapacity,
+                                 "{\"hits\":%lu,\"uid\":\"%s\"}\r\n",
+                                 hs->hits, s_uidString);
+        *data = responseBuffer;
+        *len = (ret > 0) ? ret + sizeof(API_HEADER) - 1 : 0;
+        return 1;
+    }
+    return 0;
+}
+
+/**
  * @brief  SysTick interrupt handler.
  * @param  None
  * @return None
@@ -189,10 +233,10 @@ uint8_t slipdev_char_poll(uint8_t *c)
     }
 }
 #else // buffered read
- 
-// This can be as big as the SLIP_BUFFER_SIZE for 
+
+// This can be as big as the SLIP_BUFFER_SIZE for
 // the lowest latency or smaller for lower memory usage
-#define RX_BUFFER_SIZE 32
+#define RX_BUFFER_SIZE 64
 uint8_t slipdev_char_poll(uint8_t *c)
 {
     static uint8_t rx_buffer[RX_BUFFER_SIZE];

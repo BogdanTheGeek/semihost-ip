@@ -90,7 +90,11 @@ asm:	$(BIN)/$(TARGET).asm
 
 dump: $(BIN)/$(TARGET)_dump.bin
 
-$(FSPATH)/fsdata.c: $(FSFILES)
+$(FSPATH)/fs/index.html.gz: $(FSPATH)/fs/index.html~
+	@echo "Compressing filesystem files ..."
+	gzip -k -f -9 -c $< > $@
+
+$(FSPATH)/fsdata.c: $(FSFILES) $(FSPATH)/fs/index.html.gz
 	@echo "Building filesystem ..."
 	cd $(FSPATH) && ./makefsdata
 

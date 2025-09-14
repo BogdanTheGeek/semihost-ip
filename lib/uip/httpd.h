@@ -57,10 +57,11 @@ void httpd_appcall(void);
 #endif
 
 struct httpd_state {
-  u8_t state; 
-  u16_t count;
   char *dataptr;
   char *script;
+  uint32_t hits;
+  u16_t count;
+  u8_t state; 
 };
 
 
