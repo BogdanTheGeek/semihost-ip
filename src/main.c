@@ -84,6 +84,14 @@ int getchar(void)
     return SEMIHOST_SysCall(SYS_READC, NULL);
 }
 
+void get_clock(void)
+{
+    static int last_clk = 0;
+    const int clk = SEMIHOST_SysCall(SYS_CLOCK, NULL);
+    s_systick += (clk - last_clk);
+    last_clk = clk;
+}
+
 /**
  * @brief  Read data from a file descriptor using semihosting.
  * @param  fd - file descriptor (SEMIHOST_STDIN)
@@ -140,10 +148,11 @@ int main(void)
     uip_init();
     httpd_init();
 
-    uint32_t lastMillis = millis();
+    uint32_t lastTicks = s_systick;
 
     for (;;)
     {
+       get_clock();
         uip_len = slipdev_poll();
         if (uip_len > 0)
         {
@@ -154,10 +163,10 @@ int main(void)
             }
         }
 
-        const uint32_t now = millis();
-        if (now - lastMillis >= 1000)
+        const uint32_t now = s_systick;
+        if (now - lastTicks >= 100)
         {
-            lastMillis = now;
+            lastTicks = now;
             for (uint8_t i = 0; i < UIP_CONNS; i++)
             {
                 uip_periodic(i);
@@ -188,8 +197,8 @@ int uip_api_handler(const char *endpoint, char **data, int *len)
     if (strcmp(endpoint, "status") == 0)
     {
         const int ret = snprintf(payloadStart, payloadCapacity,
-                                 "{\"hits\":%lu,\"uid\":\"%s\"}\r\n",
-                                 hs->hits, s_uidString);
+                                 "{\"hits\":%lu,\"uid\":\"%s\",\"runtime\":%lu}\r\n",
+                                 hs->hits, s_uidString, s_systick/100);
         *data = responseBuffer;
         *len = (ret > 0) ? ret + sizeof(API_HEADER) - 1 : 0;
         return 1;
@@ -204,7 +213,7 @@ int uip_api_handler(const char *endpoint, char **data, int *len)
  */
 void SysTick_Handler(void)
 {
-    s_systick++;
+    // s_systick++;
 }
 
 extern int _write(int file, char *ptr, int len);
